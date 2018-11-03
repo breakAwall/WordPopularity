@@ -1,0 +1,81 @@
+---
+title: "Homework 8 Group"
+author: "Elijah Lipkin, Krishna Goel, Toby Han"
+date: "10/25/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(knitr)
+library(RSQLite)
+
+setwd("C://Users//kgoel//Desktop//Y3 Sem1//Stat 405//Overall Project")
+
+dcon.urban <- dbConnect(SQLite(), dbname = "urbanlite.sqlite")
+dcon.yt <- dbConnect(SQLite(), dbname = "youtubelite.sqlite")
+
+dbSendQuery(conn = dcon.yt, "DROP TABLE subset_yt")
+dbSendQuery(conn = dcon.urban, "DROP TABLE subset_urban")
+```
+
+```{r Exercise 5.1, echo=FALSE}
+dbListTables(dcon.urban)
+dbListTables(dcon.yt)
+
+dbListFields(dcon.urban, "per_word")
+dbListFields(dcon.yt, "youtube_entries")
+
+res.u <- dbSendQuery(conn = dcon.urban, "
+CREATE TABLE subset_urban AS
+SELECT word,
+thumbs_up
+FROM per_word
+WHERE thumbs_up < 6500 AND
+thumbs_up > 4500
+ORDER BY thumbs_up")
+dbClearResult(res.u)
+```
+Here, we select words we would qualify as moderately popular based on their number of thumbs up received on Urban Dictionary. 
+
+```{r Exercise 5.2, echo=FALSE}
+res.yt <- dbSendQuery(conn = dcon.yt, "
+CREATE TABLE subset_yt AS
+SELECT title, 
+tags,
+views,
+likes
+FROM youtube_entries
+WHERE views > '1000000' AND
+likes < '100000'
+ORDER BY likes")
+subset.yt <- dbFetch(res.yt, -1)
+dbClearResult(res.yt)
+```
+And here, we pick out videos we'd consider to be moderately popular on YouTube. The goal here is to compare the words in the descriptions/tags of the videos with the actual words from Urban Dictionary to see how they relate, if at all.
+
+```{r Exercise 5.3, echo=FALSE}
+res.u <- dbSendQuery(conn = dcon.urban, "
+SELECT *
+FROM subset_urban;
+")
+mydf.u <- dbFetch(res.u, -1)
+dbClearResult(res.u)
+head(mydf.u)
+```
+This is the creation of a data frame from the Urban Dictionary data we just extracted. It can now be used to compare and subset within R. 
+
+```{r Exercise 5.4, echo = FALSE}
+res.yt <- dbSendQuery(conn = dcon.yt, "
+SELECT *
+FROM subset_yt;
+")
+mydf.yt <- dbFetch(res.yt, -1)
+dbClearResult(res.yt)
+
+head(mydf.yt)
+```
+This is the creation of a data frame from the YouTube data we just extracted. It can now be used to compare and subset within R. 
+
+
